@@ -1,15 +1,58 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Farfetch.OrderBatchProcessor.Dtos;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="IOrderDomainModel.cs" company="">
+//
+// </copyright>
+// <summary>
+//   The OrderDomainModel interface.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Farfetch.OrderBatchProcessor.DomainModel.Order
 {
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
+    using Farfetch.OrderBatchProcessor.Dtos;
+
+    /// <summary>
+    /// The OrderDomainModel interface.
+    /// </summary>
     public interface IOrderDomainModel
     {
-        Task<IEnumerable<string>> GetOrderLinesFromDocumentAsync(string path);
+        /// <summary>
+        /// The get order lines from document async.
+        /// </summary>
+        /// <param name="path">
+        /// The path.
+        /// </param>
+        /// <returns>
+        /// The <see cref="Task"/>.
+        /// </returns>
+        Task<List<string>> GetOrderLinesFromDocumentAsync(string path);
 
-        IEnumerable<OrderDto> GetOrders(IEnumerable<string> lines);
+        /// <summary>
+        /// The get orders.
+        /// </summary>
+        /// <param name="lines">
+        /// The lines.
+        /// </param>
+        /// <returns>
+        /// The <see cref="List"/>.
+        /// </returns>
+        List<OrderDto> GetOrders(List<string> lines);
 
-        IEnumerable<BoutiqueDto> CalculateBoutiquesOrdersCommissions(IEnumerable<OrderDto> orders, decimal commissionPercentage);
+        /// <summary>
+        /// The calculate boutiques orders commissions.
+        /// </summary>
+        /// <param name="orders">
+        /// The orders.
+        /// </param>
+        /// <param name="commissionPercentage">
+        /// The commission percentage.
+        /// </param>
+        /// <returns>
+        /// The <see cref="List"/>.
+        /// </returns>
+        List<BoutiqueDto> CalculateBoutiquesOrdersCommissions(List<OrderDto> orders, decimal commissionPercentage);
     }
 }

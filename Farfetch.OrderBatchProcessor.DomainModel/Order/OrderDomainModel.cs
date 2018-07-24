@@ -1,41 +1,70 @@
-﻿using Farfetch.OrderBatchProcessor.Common;
-using Farfetch.OrderBatchProcessor.Common.Exceptions;
-using Farfetch.OrderBatchProcessor.Common.Helpers;
-using Farfetch.OrderBatchProcessor.Dtos;
-using Farfetch.OrderBatchProcessor.Dtos.Structs;
-using Farfetch.OrderBatchProcessor.Instrumentation.Logging;
-using Ninject.Infrastructure.Language;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="OrderDomainModel.cs" company="">
+//
+// </copyright>
+// <summary>
+//   The order domain model.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
 
 namespace Farfetch.OrderBatchProcessor.DomainModel.Order
 {
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    using Farfetch.OrderBatchProcessor.Common;
+    using Farfetch.OrderBatchProcessor.Common.Exceptions;
+    using Farfetch.OrderBatchProcessor.Common.Helpers;
+    using Farfetch.OrderBatchProcessor.Dtos;
+    using Farfetch.OrderBatchProcessor.Dtos.Structs;
+    using Farfetch.OrderBatchProcessor.Instrumentation.Logging;
+
+    ///https://www.c-sharpcorner.com/article/measure-your-code-using-code-metrics/
+    /// <summary>
+    /// The order domain model.
+    /// </summary>
     public class OrderDomainModel : IOrderDomainModel
     {
-        private readonly ILoggingManager _logging;
+        /// <summary>
+        /// The _logging.
+        /// </summary>
+        private readonly ILoggingManager logging;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrderDomainModel"/> class.
+        /// </summary>
+        /// <param name="logging">
+        /// The logging.
+        /// </param>
         public OrderDomainModel(ILoggingManager logging)
         {
-            this._logging = logging;
+            this.logging = logging;
         }
 
-        public async Task<IEnumerable<string>> GetOrderLinesFromDocumentAsync(string path)
+        /// <summary>
+        /// The get order lines from document async.
+        /// </summary>
+        /// <param name="path">
+        /// The path.
+        /// </param>
+        /// <returns>
+        /// The <see cref="Task"/>.
+        /// </returns>
+        /// <exception cref="CsvNotFoundException">
+        /// </exception>
+        /// <exception cref="EmptyDocumentException">
+        /// </exception>
+        public async Task<List<string>> GetOrderLinesFromDocumentAsync(string path)
         {
-            _logging.LogInformation($"Enter GetOrderLinesFromDocumentAsync with path {path}");
+            this.logging.LogInformation($"Enter GetOrderLinesFromDocumentAsync with path {path}");
 
-            if (!File.Exists(path))
-            {
-                throw new CsvNotFoundException(Contants.Exceptions.FileNotFound);
-            }
+            ValidateIfCsvWasFound(path);
 
             FileInfo fileInfo = new FileInfo(path);
 
-            if (!fileInfo.Extension.ToLower().Contains("csv"))
-            {
-                throw new InvalidFileFormatException(Contants.Exceptions.MustBeCsv);
-            }
+            ValidateIfCsvFile(fileInfo);
 
             string document;
 
@@ -46,21 +75,29 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
 
             document = StringHelpers.SanitizeTextFile(document);
 
-            if (string.IsNullOrEmpty(document))
-            {
-                throw new EmptyDocumentException(Contants.Exceptions.FileMustHaveLines);
-            }
+            ValidateIdDocumentIsEmpty(document);
 
-            var lines = document.Split('\n').ToEnumerable();
+            var lines = document.Split('\n').ToList();
 
-            _logging.LogInformation($"Leaving GetOrderLinesFromDocumentAsync with parameter ", lines);
+            this.logging.LogInformation($"Leaving GetOrderLinesFromDocumentAsync with parameter ", lines);
 
             return lines;
         }
 
-        public IEnumerable<OrderDto> GetOrders(IEnumerable<string> lines)
+        /// <summary>
+        /// The get orders.
+        /// </summary>
+        /// <param name="lines">
+        /// The lines.
+        /// </param>
+        /// <returns>
+        /// The <see cref="IEnumerable"/>.
+        /// </returns>
+        /// <exception cref="NoValidOrderFormatException">
+        /// </exception>
+        public List<OrderDto> GetOrders(List<string> lines)
         {
-            _logging.LogInformation($"Enter GetOrders with parameter ", lines);
+            this.logging.LogInformation($"Enter GetOrders with parameter ", lines);
 
             var counter = 1;
 
@@ -70,10 +107,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
             {
                 var order = line.Split(',');
 
-                if (!order.Any() || order.Count() != 3)
-                {
-                    throw new NoValidOrderFormatException($"{Contants.Exceptions.NoValidOrderFormat}{counter}");
-                }
+                ValidateIfOrderLineIsCorrect(order, counter);
 
                 orders.Add(new OrderDto
                 {
@@ -85,44 +119,122 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
                 counter++;
             }
 
-            _logging.LogInformation($"Leaving GetOrders with parameter ", orders);
+            this.logging.LogInformation($"Leaving GetOrders with parameter ", orders);
 
             return orders;
         }
 
-        public IEnumerable<BoutiqueDto> CalculateBoutiquesOrdersCommissions(IEnumerable<OrderDto> orders, decimal commissionPercentage)
+        /// <summary>
+        /// The calculate boutiques orders commissions.
+        /// </summary>
+        /// <param name="orders">
+        /// The orders.
+        /// </param>
+        /// <param name="orderDtos"></param>
+        /// <param name="commissionPercentage">
+        /// The commission percentage.
+        /// </param>
+        /// <returns>
+        /// The <see cref="IEnumerable"/>.
+        /// </returns>
+        public List<BoutiqueDto> CalculateBoutiquesOrdersCommissions(List<OrderDto> orderDtos, decimal commissionPercentage)
         {
-            _logging.LogInformation($"Enter CalculateBoutiquesOrdersCommissions with parameter ", orders);
+            this.logging.LogInformation($"Enter CalculateBoutiquesOrdersCommissions with parameter ", orderDtos);
 
             var boutiques = new List<BoutiqueDto>();
 
-            var boutiqueIds = orders.OrderBy(x => x.BoutiqueId).Select(x => x.BoutiqueId).Distinct().ToList();
+            var boutiqueIds = orderDtos.OrderBy(x => x.BoutiqueId).Select(x => x.BoutiqueId).Distinct().ToList();
 
             foreach (var boutiqueId in boutiqueIds)
             {
-                var boutiqueOrders = orders.Where(x => x.BoutiqueId == boutiqueId).OrderBy(x => x.OrderId);
-                //The order with the highest value of the day will not be subject to commission - Not appliable if only one order.
-                IEnumerable<OrderDto> ordersToCharge = boutiqueOrders.Count() > 1 ? boutiqueOrders.DropLast() : boutiqueOrders;
+                var boutiqueOrders = orderDtos.Where(x => x.BoutiqueId == boutiqueId).OrderBy(x => x.OrderId).ToList();
+
+                var ordersToCharge = boutiqueOrders.Count() > 1 ? boutiqueOrders.DropLast().ToList() : boutiqueOrders;
 
                 boutiques.Add(new BoutiqueDto
                 {
                     BoutiqueId = boutiqueId,
-                    Orders = ordersToCharge.Select((order) => new OrderDto
-                    {
-                        BoutiqueId = order.BoutiqueId,
-                        OrderId = order.OrderId,
-                        TotalOrderPrice = order.TotalOrderPrice,
-                        //* Boutiques should be charged by 10% of the total value every order - Single Order Commission
-                        OrderCommission = order.TotalOrderPrice / commissionPercentage
-                    }).ToList(),
-                    //* Boutiques should be charged by 10% of the total value every order - Total Orders Commission
+                    Orders = ordersToCharge.Select(
+                                          order => new OrderDto
+                                          {
+                                              BoutiqueId = order.BoutiqueId,
+                                              OrderId = order.OrderId,
+                                              TotalOrderPrice = order.TotalOrderPrice,
+                                              OrderCommission = order.TotalOrderPrice / commissionPercentage
+                                          }).ToList(),
+
                     TotalOrdersCommission = ordersToCharge.Sum(x => x.TotalOrderPrice / commissionPercentage)
                 });
             }
 
-            _logging.LogInformation($"Leaving CalculateBoutiquesOrdersCommissions with parameter ", boutiques);
+            this.logging.LogInformation($"Leaving CalculateBoutiquesOrdersCommissions with parameter ", boutiques);
 
             return boutiques;
+        }
+
+        /// <summary>
+        /// The is valid file.
+        /// </summary>
+        /// <param name="fileInfo">
+        /// The file info.
+        /// </param>
+        /// <exception cref="InvalidFileFormatException">
+        /// </exception>
+        private static void ValidateIfCsvFile(FileInfo fileInfo)
+        {
+            if (!fileInfo.Extension.ToLower().Contains("csv"))
+            {
+                throw new InvalidFileFormatException(Contants.Exceptions.MustBeCsv);
+            }
+        }
+
+        /// <summary>
+        /// The is order line valid.
+        /// </summary>
+        /// <param name="order">
+        /// The order.
+        /// </param>
+        /// <param name="counter">
+        /// The counter.
+        /// </param>
+        /// <exception cref="NoValidOrderFormatException">
+        /// </exception>
+        private static void ValidateIfOrderLineIsCorrect(string[] order, int counter)
+        {
+            if (!order.Any() || order.Count() != 3)
+            {
+                throw new NoValidOrderFormatException($"{Contants.Exceptions.NoValidOrderFormat}{counter}");
+            }
+        }
+
+        /// <summary>
+        /// The is csv not found.
+        /// </summary>
+        /// <param name="path">
+        /// The path.
+        /// </param>
+        /// <exception cref="CsvNotFoundException">
+        /// </exception>
+        private static void ValidateIfCsvWasFound(string path)
+        {
+            if (!File.Exists(path))
+            {
+                throw new CsvNotFoundException(Contants.Exceptions.FileNotFound);
+            }
+        }
+
+        /// <summary>
+        /// The empty document.
+        /// </summary>
+        /// <param name="document">
+        /// The document.
+        /// </param>
+        private static void ValidateIdDocumentIsEmpty(string document)
+        {
+            if (string.IsNullOrEmpty(document))
+            {
+                throw new EmptyDocumentException(Contants.Exceptions.FileMustHaveLines);
+            }
         }
     }
 }

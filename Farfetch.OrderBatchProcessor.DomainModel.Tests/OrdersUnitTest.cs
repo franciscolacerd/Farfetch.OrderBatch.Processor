@@ -148,7 +148,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
 
                 Assert.IsTrue(orders.Any());
 
-                this.OrderDomainModel.CalculateBoutiquesOrdersCommissions(orders, 10);
+                this.OrderDomainModel.CalculateBoutiquesOrdersCommissions(orders.ToList(), 10);
             }
             catch (InvalidAmountFormatException exception)
             {
@@ -169,7 +169,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
 
             Assert.IsTrue(orders.Any());
 
-            var boutiquesWithOrders = this.OrderDomainModel.CalculateBoutiquesOrdersCommissions(orders, 10);
+            var boutiquesWithOrders = this.OrderDomainModel.CalculateBoutiquesOrdersCommissions(orders.ToList(), 10);
 
             Assert.IsTrue(boutiquesWithOrders.Any());
 

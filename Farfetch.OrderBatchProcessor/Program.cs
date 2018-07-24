@@ -9,6 +9,8 @@ using Ninject;
 
 namespace Farfetch.OrderBatchProcessor
 {
+    using System.Linq;
+
     internal class Program
     {
         private static StandardKernel _kernel;
@@ -90,7 +92,7 @@ namespace Farfetch.OrderBatchProcessor
 
                     var orders = orderDomainModel.GetOrders(orderLines);
 
-                    var boutiquesOrdersWithCommissions = orderDomainModel.CalculateBoutiquesOrdersCommissions(orders, commissionPercentage: 10);
+                    var boutiquesOrdersWithCommissions = orderDomainModel.CalculateBoutiquesOrdersCommissions(orders.ToList(), commissionPercentage: 10);
 
                     var stringBuilder = new StringBuilder();
 
