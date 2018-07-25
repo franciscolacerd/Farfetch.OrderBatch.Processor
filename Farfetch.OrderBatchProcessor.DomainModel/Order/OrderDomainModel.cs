@@ -141,9 +141,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
 
             foreach (var boutiqueId in GetBoutiqueIds(orders))
             {
-                var boutiqueOrders = orders.Where(x => x.BoutiqueId == boutiqueId).OrderBy(x => x.OrderId).ToList();
-
-                var ordersToCharge = boutiqueOrders.Count > 1 ? boutiqueOrders.DropLast().ToList() : boutiqueOrders;
+                var ordersToCharge = GetOrdersToCharge(orders, boutiqueId);
 
                 boutiques.Add(new BoutiqueDto
                 {
@@ -164,6 +162,13 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
             _logging.LogInformation($"Leaving CalculateBoutiquesOrdersCommissions with parameter ", boutiques);
 
             return boutiques;
+        }
+
+        private static List<OrderDto> GetOrdersToCharge(List<OrderDto> orders, string boutiqueId)
+        {
+            var boutiqueOrders = orders.Where(x => x.BoutiqueId == boutiqueId).OrderBy(x => x.OrderId).ToList();
+
+            return boutiqueOrders.Count > 1 ? boutiqueOrders.DropLast().ToList() : boutiqueOrders;
         }
 
         private static List<string> GetBoutiqueIds(List<OrderDto> orders)
