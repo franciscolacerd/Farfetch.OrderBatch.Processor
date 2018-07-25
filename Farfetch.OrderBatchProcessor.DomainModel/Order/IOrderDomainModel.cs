@@ -12,7 +12,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
-    using Farfetch.OrderBatchProcessor.Dtos;
+    using Dtos;
 
     /// <summary>
     /// The OrderDomainModel interface.
@@ -37,7 +37,6 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// The lines.
         /// </param>
         /// <returns>
-        /// The <see cref="List"/>.
         /// </returns>
         List<OrderDto> GetOrders(List<string> lines);
 
@@ -51,7 +50,6 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// The commission percentage.
         /// </param>
         /// <returns>
-        /// The <see cref="List"/>.
         /// </returns>
         List<BoutiqueDto> CalculateBoutiquesOrdersCommissions(List<OrderDto> orders, decimal commissionPercentage);
     }

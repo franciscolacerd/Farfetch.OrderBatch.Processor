@@ -11,11 +11,11 @@ namespace Farfetch.OrderBatchProcessor
 {
     using System.Linq;
 
-    internal class Program
+    internal static class Program
     {
         private static StandardKernel _kernel;
 
-        private static void Main(string[] args)
+        private static void Main()
         {
             _kernel = NinjectBootstrapper.Get();
 
@@ -39,7 +39,7 @@ namespace Farfetch.OrderBatchProcessor
 
                 try
                 {
-                    string result = await ExecuteAsync(consoleInput);
+                    string result = await ExecuteAsync(consoleInput).ConfigureAwait(false);
 
                     WriteToConsole(result);
 
@@ -60,11 +60,9 @@ namespace Farfetch.OrderBatchProcessor
 
         private static async Task<string> ExecuteAsync(string command)
         {
-            string message;
-
             string path = string.Empty;
 
-            if (command.StartsWith(ConsoleCommands.OrderBatch))
+            if (command.StartsWith(ConsoleCommands.OrderBatch, StringComparison.Ordinal))
             {
                 path = command.Replace(ConsoleCommands.OrderBatch, string.Empty).Trim();
 
@@ -74,21 +72,18 @@ namespace Farfetch.OrderBatchProcessor
             switch (command)
             {
                 case ConsoleCommands.HELP:
-                    message = Common.Contants.UI.HelpCommands;
-                    break;
+                    return Common.Contants.UI.HelpCommands;
 
                 case ConsoleCommands.LOVE:
-                    message = Common.Contants.UI.Love;
-                    break;
+                    return Common.Contants.UI.Love;
 
                 case ConsoleCommands.END:
-                    message = Common.Contants.UI.Close;
-                    break;
+                    return Common.Contants.UI.Close;
 
                 case ConsoleCommands.OrderBatch:
                     var orderDomainModel = _kernel.Get<IOrderDomainModel>();
 
-                    var orderLines = await orderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                    var orderLines = await orderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
 
                     var orders = orderDomainModel.GetOrders(orderLines);
 
@@ -98,20 +93,14 @@ namespace Farfetch.OrderBatchProcessor
 
                     foreach (var boutique in boutiquesOrdersWithCommissions)
                     {
-                        stringBuilder.Append($"{boutique.BoutiqueId},{boutique.TotalOrdersCommission}");
-                        stringBuilder.Append(Environment.NewLine);
+                        stringBuilder.Append(boutique.BoutiqueId).Append(",").Append(boutique.TotalOrdersCommission).Append(Environment.NewLine);
                     }
 
-                    message = stringBuilder.ToString();
-
-                    break;
+                    return stringBuilder.ToString();
 
                 default:
-                    message = Common.Contants.UI.UnknownCommand;
-                    break;
+                    return Common.Contants.UI.UnknownCommand;
             }
-
-            return message;
         }
 
         public static void WriteToConsole(string message = "")

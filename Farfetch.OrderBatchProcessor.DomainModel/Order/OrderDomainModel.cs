@@ -14,12 +14,12 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
     using System.Linq;
     using System.Threading.Tasks;
 
-    using Farfetch.OrderBatchProcessor.Common;
-    using Farfetch.OrderBatchProcessor.Common.Exceptions;
-    using Farfetch.OrderBatchProcessor.Common.Helpers;
-    using Farfetch.OrderBatchProcessor.Dtos;
-    using Farfetch.OrderBatchProcessor.Dtos.Structs;
-    using Farfetch.OrderBatchProcessor.Instrumentation.Logging;
+    using Common;
+    using Common.Exceptions;
+    using Common.Helpers;
+    using Dtos;
+    using Dtos.Structs;
+    using Instrumentation.Logging;
 
     ///https://www.c-sharpcorner.com/article/measure-your-code-using-code-metrics/
     /// <summary>
@@ -30,7 +30,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// <summary>
         /// The _logging.
         /// </summary>
-        private readonly ILoggingManager logging;
+        private readonly ILoggingManager _logging;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OrderDomainModel"/> class.
@@ -38,10 +38,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// <param name="logging">
         /// The logging.
         /// </param>
-        public OrderDomainModel(ILoggingManager logging)
-        {
-            this.logging = logging;
-        }
+        public OrderDomainModel(ILoggingManager logging) => this._logging = logging;
 
         /// <summary>
         /// The get order lines from document async.
@@ -58,7 +55,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// </exception>
         public async Task<List<string>> GetOrderLinesFromDocumentAsync(string path)
         {
-            this.logging.LogInformation($"Enter GetOrderLinesFromDocumentAsync with path {path}");
+            _logging.LogInformation($"Enter GetOrderLinesFromDocumentAsync with path {path}");
 
             ValidateIfCsvWasFound(path);
 
@@ -70,16 +67,16 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
 
             using (var reader = File.OpenText(path))
             {
-                document = await reader.ReadToEndAsync();
+                document = await reader.ReadToEndAsync().ConfigureAwait(false);
             }
 
             document = StringHelpers.SanitizeTextFile(document);
 
-            ValidateIdDocumentIsEmpty(document);
+            ValidateIfDocumentIsEmpty(document);
 
             var lines = document.Split('\n').ToList();
 
-            this.logging.LogInformation($"Leaving GetOrderLinesFromDocumentAsync with parameter ", lines);
+            _logging.LogInformation($"Leaving GetOrderLinesFromDocumentAsync with parameter ", lines);
 
             return lines;
         }
@@ -91,13 +88,13 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// The lines.
         /// </param>
         /// <returns>
-        /// The <see cref="IEnumerable"/>.
+        /// The <see cref="List&lt;OrderDto&gt;"/>.
         /// </returns>
         /// <exception cref="NoValidOrderFormatException">
         /// </exception>
         public List<OrderDto> GetOrders(List<string> lines)
         {
-            this.logging.LogInformation($"Enter GetOrders with parameter ", lines);
+            _logging.LogInformation($"Enter GetOrders with parameter ", lines);
 
             var counter = 1;
 
@@ -119,7 +116,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
                 counter++;
             }
 
-            this.logging.LogInformation($"Leaving GetOrders with parameter ", orders);
+            _logging.LogInformation($"Leaving GetOrders with parameter ", orders);
 
             return orders;
         }
@@ -130,26 +127,23 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// <param name="orders">
         /// The orders.
         /// </param>
-        /// <param name="orderDtos"></param>
         /// <param name="commissionPercentage">
         /// The commission percentage.
         /// </param>
         /// <returns>
-        /// The <see cref="IEnumerable"/>.
+        /// The <see cref="List&lt;BoutiqueDto&gt;"/>.
         /// </returns>
-        public List<BoutiqueDto> CalculateBoutiquesOrdersCommissions(List<OrderDto> orderDtos, decimal commissionPercentage)
+        public List<BoutiqueDto> CalculateBoutiquesOrdersCommissions(List<OrderDto> orders, decimal commissionPercentage)
         {
-            this.logging.LogInformation($"Enter CalculateBoutiquesOrdersCommissions with parameter ", orderDtos);
+            _logging.LogInformation($"Enter CalculateBoutiquesOrdersCommissions with parameter ", orders);
 
             var boutiques = new List<BoutiqueDto>();
 
-            var boutiqueIds = orderDtos.OrderBy(x => x.BoutiqueId).Select(x => x.BoutiqueId).Distinct().ToList();
-
-            foreach (var boutiqueId in boutiqueIds)
+            foreach (var boutiqueId in GetBoutiqueIds(orders))
             {
-                var boutiqueOrders = orderDtos.Where(x => x.BoutiqueId == boutiqueId).OrderBy(x => x.OrderId).ToList();
+                var boutiqueOrders = orders.Where(x => x.BoutiqueId == boutiqueId).OrderBy(x => x.OrderId).ToList();
 
-                var ordersToCharge = boutiqueOrders.Count() > 1 ? boutiqueOrders.DropLast().ToList() : boutiqueOrders;
+                var ordersToCharge = boutiqueOrders.Count > 1 ? boutiqueOrders.DropLast().ToList() : boutiqueOrders;
 
                 boutiques.Add(new BoutiqueDto
                 {
@@ -167,9 +161,14 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
                 });
             }
 
-            this.logging.LogInformation($"Leaving CalculateBoutiquesOrdersCommissions with parameter ", boutiques);
+            _logging.LogInformation($"Leaving CalculateBoutiquesOrdersCommissions with parameter ", boutiques);
 
             return boutiques;
+        }
+
+        private static List<string> GetBoutiqueIds(List<OrderDto> orders)
+        {
+            return orders.OrderBy(x => x.BoutiqueId).Select(x => x.BoutiqueId).Distinct().ToList();
         }
 
         /// <summary>
@@ -182,7 +181,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// </exception>
         private static void ValidateIfCsvFile(FileInfo fileInfo)
         {
-            if (!fileInfo.Extension.ToLower().Contains("csv"))
+            if (fileInfo.Extension.IndexOf("csv", System.StringComparison.OrdinalIgnoreCase) < 0)
             {
                 throw new InvalidFileFormatException(Contants.Exceptions.MustBeCsv);
             }
@@ -201,7 +200,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// </exception>
         private static void ValidateIfOrderLineIsCorrect(string[] order, int counter)
         {
-            if (!order.Any() || order.Count() != 3)
+            if (order.Length == 0 || order.Length != 3)
             {
                 throw new NoValidOrderFormatException($"{Contants.Exceptions.NoValidOrderFormat}{counter}");
             }
@@ -229,7 +228,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// <param name="document">
         /// The document.
         /// </param>
-        private static void ValidateIdDocumentIsEmpty(string document)
+        private static void ValidateIfDocumentIsEmpty(string document)
         {
             if (string.IsNullOrEmpty(document))
             {

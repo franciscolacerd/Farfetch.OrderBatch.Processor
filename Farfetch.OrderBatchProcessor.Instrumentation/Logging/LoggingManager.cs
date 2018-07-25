@@ -12,18 +12,15 @@ namespace Farfetch.OrderBatchProcessor.Instrumentation.Logging
             Contants.TraceSwitch.Name,
             Contants.TraceSwitch.Description);
 
-        public LoggingManager()
-        {
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.EventLog(Contants.TraceSwitch.Source, Contants.TraceSwitch.Application, manageEventSource: true)
-                .CreateLogger();
-        }
+        public LoggingManager() => Log.Logger = new LoggerConfiguration()
+            .WriteTo.EventLog(Contants.TraceSwitch.Source, Contants.TraceSwitch.Application, manageEventSource: true)
+            .CreateLogger();
 
         public void LogInformation(string message)
         {
             if (TraceSwitch.TraceVerbose)
             {
-                Log.Information(message);
+                Log.Information("{Message}", message);
 
                 Log.CloseAndFlush();
             }
@@ -39,7 +36,7 @@ namespace Farfetch.OrderBatchProcessor.Instrumentation.Logging
                         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                     });
 
-                Log.Information($"{message}{json}");
+                Log.Information("Information {Message}::{Json}", message, json);
 
                 Log.CloseAndFlush();
             }
@@ -55,7 +52,7 @@ namespace Farfetch.OrderBatchProcessor.Instrumentation.Logging
                         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                     });
 
-                Log.Error(json);
+                Log.Error("Error {Json}", json);
 
                 Log.CloseAndFlush();
             }

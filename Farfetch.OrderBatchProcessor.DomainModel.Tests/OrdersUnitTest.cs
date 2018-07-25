@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
 {
     [TestClass]
-    public class OrderUnitTest
+    public class OrderUnitTests
     {
-        private IOrderDomainModel OrderDomainModel { get; set; }
+        private IOrderDomainModel OrderDomainModel { get; }
 
-        public OrderUnitTest()
+        public OrderUnitTests()
         {
             var kernel = NinjectBootstrapper.Get();
             this.OrderDomainModel = kernel.Get<IOrderDomainModel>();
@@ -28,9 +28,9 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
             {
                 var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.CsvFile}";
 
-                var result = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                var result = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
 
-                Assert.IsTrue(result.Any());
+                Assert.IsTrue(result.Count > 0);
             }
             catch (Exception e)
             {
@@ -45,9 +45,9 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
             {
                 var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.CsvFileWithOneLine}";
 
-                var result = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                var result = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
 
-                Assert.IsTrue(result.Any());
+                Assert.IsTrue(result.Count > 0);
             }
             catch (Exception e)
             {
@@ -62,7 +62,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
             {
                 var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.CsvFileWithNoLines}";
 
-                await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
             }
             catch (EmptyDocumentException exception)
             {
@@ -77,7 +77,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
             {
                 var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.InvalidFileFormat}";
 
-                await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
             }
             catch (InvalidFileFormatException exception)
             {
@@ -92,7 +92,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
             {
                 var path = $"{Directory.GetCurrentDirectory()}{Contants.Path.InvalidFileFormat}";
 
-                await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
             }
             catch (CsvNotFoundException exception)
             {
@@ -107,15 +107,15 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
             {
                 var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.CsvFileWithInvalidLine}";
 
-                var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
 
-                Assert.IsTrue(orderLines.Any());
+                Assert.IsTrue(orderLines.Count > 0);
 
                 this.OrderDomainModel.GetOrders(orderLines);
             }
             catch (NoValidOrderFormatException exception)
             {
-                Assert.AreEqual(exception.Message, "Order must be in <Boutique_ID>,<Order_ID>,<TotalOrderPrice> format at Line: 3");
+                Assert.AreEqual("Order must be in <Boutique_ID>,<Order_ID>,<TotalOrderPrice> format at Line: 3", exception.Message);
             }
         }
 
@@ -124,13 +124,13 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
         {
             var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.CsvFile}";
 
-            var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+            var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
 
-            Assert.IsTrue(orderLines.Any());
+            Assert.IsTrue(orderLines.Count > 0);
 
             var orders = this.OrderDomainModel.GetOrders(orderLines);
 
-            Assert.IsTrue(orders.Any());
+            Assert.IsTrue(orders.Count > 0);
         }
 
         [TestMethod]
@@ -140,19 +140,19 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
             {
                 var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.CsvFileWithInvalidAmountFormat}";
 
-                var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+                var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
 
-                Assert.IsTrue(orderLines.Any());
+                Assert.IsTrue(orderLines.Count > 0);
 
                 var orders = this.OrderDomainModel.GetOrders(orderLines);
 
-                Assert.IsTrue(orders.Any());
+                Assert.IsTrue(orders.Count > 0);
 
                 this.OrderDomainModel.CalculateBoutiquesOrdersCommissions(orders.ToList(), 10);
             }
             catch (InvalidAmountFormatException exception)
             {
-                Assert.AreEqual(exception.Message, "Amount is in invalid format: 200.0x");
+                Assert.AreEqual("Amount is in invalid format: 200.0x", exception.Message);
             }
         }
 
@@ -161,27 +161,27 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Tests
         {
             var path = $"{Directory.GetCurrentDirectory().Replace(Contants.Path.Debug, String.Empty)}{Contants.Path.CsvFile}";
 
-            var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path);
+            var orderLines = await this.OrderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
 
-            Assert.IsTrue(orderLines.Any());
+            Assert.IsTrue(orderLines.Count > 0);
 
             var orders = this.OrderDomainModel.GetOrders(orderLines);
 
-            Assert.IsTrue(orders.Any());
+            Assert.IsTrue(orders.Count > 0);
 
             var boutiquesWithOrders = this.OrderDomainModel.CalculateBoutiquesOrdersCommissions(orders.ToList(), 10);
 
-            Assert.IsTrue(boutiquesWithOrders.Any());
+            Assert.IsTrue(boutiquesWithOrders.Count > 0);
 
-            Assert.AreEqual(boutiquesWithOrders.Count(), 2);
+            Assert.AreEqual(2, boutiquesWithOrders.Count);
 
-            Assert.AreEqual(boutiquesWithOrders.First().BoutiqueId, "B10");
+            Assert.AreEqual("B10", boutiquesWithOrders[0].BoutiqueId);
 
-            Assert.AreEqual(boutiquesWithOrders.First().TotalOrdersCommission, 30);
+            Assert.AreEqual(30, boutiquesWithOrders[0].TotalOrdersCommission);
 
-            Assert.AreEqual(boutiquesWithOrders.Last().BoutiqueId, "B11");
+            Assert.AreEqual("B11", boutiquesWithOrders.Last().BoutiqueId);
 
-            Assert.AreEqual(boutiquesWithOrders.Last().TotalOrdersCommission, 10);
+            Assert.AreEqual(10, boutiquesWithOrders.Last().TotalOrdersCommission);
         }
     }
 }
