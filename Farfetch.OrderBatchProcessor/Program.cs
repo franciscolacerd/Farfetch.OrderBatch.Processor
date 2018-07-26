@@ -1,16 +1,13 @@
-﻿using System;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Farfetch.OrderBatchProcessor.DomainModel.Order;
+﻿using Farfetch.OrderBatchProcessor.DomainModel.Order;
 using Farfetch.OrderBatchProcessor.Dtos.Structs;
 using Farfetch.OrderBatchProcessor.Instrumentation.Logging;
 using Ninject;
+using System;
+using System.Text;
+using System.Threading;
 
 namespace Farfetch.OrderBatchProcessor
 {
-    using System.Linq;
-
     internal static class Program
     {
         private static StandardKernel _kernel;
@@ -27,10 +24,10 @@ namespace Farfetch.OrderBatchProcessor
             WriteToConsole(Common.Contants.UI.Welcome);
             WriteToConsole(Common.Contants.UI.Help);
 
-            RunAsync().Wait();
+            Run();
         }
 
-        private static async Task RunAsync()
+        private static void Run()
         {
             while (true)
             {
@@ -39,7 +36,7 @@ namespace Farfetch.OrderBatchProcessor
 
                 try
                 {
-                    string result = await ExecuteAsync(consoleInput).ConfigureAwait(false);
+                    string result = Execute(consoleInput);
 
                     WriteToConsole(result);
 
@@ -58,13 +55,13 @@ namespace Farfetch.OrderBatchProcessor
             }
         }
 
-        private static async Task<string> ExecuteAsync(string command)
+        private static string Execute(string command)
         {
             string path = string.Empty;
 
-            if (command.StartsWith(ConsoleCommands.OrderBatch, StringComparison.Ordinal))
+            if (command.StartsWith(ConsoleCommands.OrderBatch, StringComparison.CurrentCulture))
             {
-                path = command.Replace(ConsoleCommands.OrderBatch, string.Empty).Trim();
+                path = command.Split(' ')[1];
 
                 command = ConsoleCommands.OrderBatch;
             }
@@ -83,11 +80,7 @@ namespace Farfetch.OrderBatchProcessor
                 case ConsoleCommands.OrderBatch:
                     var orderDomainModel = _kernel.Get<IOrderDomainModel>();
 
-                    var orderLines = await orderDomainModel.GetOrderLinesFromDocumentAsync(path).ConfigureAwait(false);
-
-                    var orders = orderDomainModel.GetOrders(orderLines);
-
-                    var boutiquesOrdersWithCommissions = orderDomainModel.CalculateBoutiquesOrdersCommissions(orders.ToList(), commissionPercentage: 10);
+                    var boutiquesOrdersWithCommissions = orderDomainModel.CalculateBoutiquesOrdersCommissions(path, commissionPercentage: 10);
 
                     var stringBuilder = new StringBuilder();
 
