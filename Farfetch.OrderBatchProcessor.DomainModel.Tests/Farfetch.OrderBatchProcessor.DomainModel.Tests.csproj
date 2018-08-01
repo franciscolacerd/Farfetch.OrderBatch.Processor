@@ -79,6 +79,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="Files\sample.orders.invalidamountformat.csv" />
+    <None Include="Files\sample.orders.stresstests.csv" />
     <None Include="Files\sample.orders.xpto" />
     <None Include="Files\sample.orders.invalidline.csv" />
     <None Include="Files\sample.orders.nolines.csv" />
