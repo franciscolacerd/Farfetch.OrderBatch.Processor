@@ -13,6 +13,7 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
     using Common.Exceptions;
     using Common.Helpers;
     using Dtos;
+    using Farfetch.OrderBatchProcessor.Dtos.Structs;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -35,27 +36,27 @@ namespace Farfetch.OrderBatchProcessor.DomainModel.Order
         /// </param>
         /// <returns>
         /// </returns>
-        //TODO: remove max order
         public List<BoutiqueDto> CalculateBoutiquesOrdersCommissions(string path, decimal commissionPercentage)
         {
             ValidateIfCsvFile(path);
 
             ValidateIfCsvWasFound(path);
 
-            return (from order in from file in File.ReadAllLines(path)
-                                  let lines = file.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                                  select new OrderDto()
-                                  {
-                                      BoutiqueId = lines[0],
-                                      OrderId = lines[1],
-                                      TotalOrderPrice = FormaterHelpers.ConvertFromStringToDecimal(lines[2])
-                                  }
-                    group order by new { order.BoutiqueId, order.TotalOrderPrice }
-                            into grouping
+            return (from order in (from file in File.ReadAllLines(path)
+                                   let lines = file.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                                   select new OrderDto()
+                                   {
+                                       BoutiqueId = lines[OrderFormat.BoutiqueId],
+                                       OrderId = lines[OrderFormat.OrderId],
+                                       TotalOrderPrice = FormaterHelpers.ConvertFromStringToDecimal(lines[OrderFormat.TotalOrderPrice])
+                                   })
+                    group order by new { order.BoutiqueId } into boutiqueGrouping
+                    let boutiqueComissions = boutiqueGrouping.Sum(x => x.TotalOrderPrice / commissionPercentage)
+                    let boutiqueMaxComission = boutiqueGrouping.Max(x => x.TotalOrderPrice / commissionPercentage)
                     select new BoutiqueDto()
                     {
-                        BoutiqueId = grouping.Key.BoutiqueId,
-                        TotalOrdersCommission = grouping.Sum(x => x.TotalOrderPrice / commissionPercentage)
+                        BoutiqueId = boutiqueGrouping.Key.BoutiqueId,
+                        TotalOrdersCommission = boutiqueGrouping.Count() > 1 ? boutiqueComissions - boutiqueMaxComission : boutiqueComissions
                     }).ToList();
         }
 
