@@ -79,6 +79,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="Documentation\Farfetch - Order Batch Processor - 2018-07-18.docx" />
+    <None Include="Documentation\order-batch-processing\README.md" />
+    <None Include="Documentation\order-batch-processing\sample.orders.csv" />
     <None Include="Farfetch.OrderBatchProcessor_TemporaryKey.pfx" />
     <None Include="packages.config" />
   </ItemGroup>
